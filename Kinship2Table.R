@@ -1,4 +1,4 @@
-setwd("~/FamilialSearch/familinix/")
+setwd("~/Cynthia")
 ID_gender <- read.csv(file = "IDandGender.txt", header = T, sep = " ", stringsAsFactors = FALSE)
 print("IDandGender.txt done ")
 relation = read.csv( file ="child_parent.txt", header = T, sep = "\t")
@@ -22,7 +22,11 @@ print("kinshipformatDF rbind w/ newIDs")
 children = relation[,2]
 newIDcounter = 86127512
 i = 1
-while (i <= length(children)) { 
+count = 0
+time1= Sys.time()
+
+while (i <= length(children)) {
+    count = count + 1
   if(relation[i,2] == relation[i+1,2]){ 
     parents = c(relation[i,1], relation[i+1,1])
     child = relation[i,2]
@@ -83,6 +87,15 @@ while (i <= length(children)) {
     }
   } 
   i =  i +1
+  count = count + 1
+  if (count%%1000 == 0){ #
+    time2 = Sys.time()
+    print(time2 - time1)
+    count = 0 
+    print(paste("ID: ", children[i]))
+    print(paste("parents: ", parents))
+    print(paste("this is i:", i))
+  }
 }
 #end while  
 write.table(kinshipformatDF, "~/Cynthia/kinshipformat.txt", sep = "\t")

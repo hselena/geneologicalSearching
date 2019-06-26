@@ -1,4 +1,4 @@
-setwd("~/FamilialSearch/familinix")
+setwd("~/FamilialSearch/familinix/")
 ID_gender <- read.csv(file = "IDandGender.txt", header = T, sep = " ", stringsAsFactors = FALSE)
 print("IDandGender.txt done ")
 relation = read.csv( file ="child_parent.txt", header = T, sep = "\t")
@@ -16,33 +16,48 @@ newIDs[,1] = 86127513:88071375
 colnames(newIDs) <- c("ID","gender" ,"FatherID", "MotherID")
 print("1943863 newIDs created")
 #combine matrix for newIDs and kinshipformatDF 
-kinshipformatDF = rbind(kinshipformatDF, newIDs)
+kinshipformatDF = rbind(kinshipformatDF, newIDs)-
 print("kinshipformatDF rbind w/ newIDs")
 
 children = relation[,2]
 newIDcounter = 86127512
 i = 1
-time1 = Sys.time()
-count = 1
-
 while (i <= length(children)) { 
   if(relation[i,2] == relation[i+1,2]){ 
     parents = c(relation[i,1], relation[i+1,1])
     child = relation[i,2]
     i = i + 1 
-    if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown"){
-      if(kinshipformatDF[as.numeric(parents[2]),2] == "female"){
-        kinshipformatDF[as.numeric(parents[1]),2] = "male"
-      } else{ 
-        kinshipformatDF[as.numeric(parents[1]),2] = "female"
+    #if statement where you ask if parent 1 or parent 2 have unknown gender 
+    if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown" ||  kinshipformatDF[as.numeric(parents[2]),2] == "unknown"){
+      #parent 1 has an unknown gender 
+      if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown"){
+        #parent 2 is female then parent 1 is now male 
+        if(kinshipformatDF[as.numeric(parents[2]),2] == "female"){ 
+          kinshipformatDF[as.numeric(parents[1]),2] = "male"
+          
         }
-    } else {
-      if(kinshipformatDF[as.numeric(parents[1]),2] == "female"){
-        kinshipformatDF[as.numeric(parents[2]),2] = "male"
-      } else{ 
-        kinshipformatDF[as.numeric(parents[2]),2] = "female"
+        #parent 2 is male then parent 1 is now female 
+        else{ 
+          kinshipformatDF[as.numeric(parents[1]),2] = "female"
+        }
       }
-    }
+      #parent 2 has an unknown gender
+      else if (kinshipformatDF[as.numeric(parents[2]),2] == "unknown") {
+        # parent 1 is female then parent 2 is male 
+        if(kinshipformatDF[as.numeric(parents[1]),2] == "female"){
+          kinshipformatDF[as.numeric(parents[2]),2] = "male"
+        }
+        #parent 1 is male then parent 2 is female 
+        else{ 
+          kinshipformatDF[as.numeric(parents[2]),2] = "female"
+        }
+      } 
+      #both parents are unknown 
+      else if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown" &&  kinshipformatDF[as.numeric(parents[2]),2] == "unknown"){
+        kinshipformatDF[as.numeric(parents[2]),2] = "female"
+        kinshipformatDF[as.numeric(parents[1]),2] = "male"
+      }
+    } 
   } 
   # this child has one parent 
   else{ 
@@ -67,15 +82,7 @@ while (i <= length(children)) {
       kinshipformatDF[as.numeric(child),3] = x
     }
   } 
-  i = i +1
-  count = count + 1 
-  if (count%%200 == 0){ # 
-    time2 = Sys.time()
-    print(time2 - time1)
-    count = 0 
-    print(paste("ID: ", children[i]))
-    print(paste("parents: ", parents))
-  }
+  i =  i +1
 }
 #end while  
 write.table(kinshipformatDF, "~/Cynthia/kinshipformat.txt", sep = "\t")

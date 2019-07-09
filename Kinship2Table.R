@@ -1,102 +1,60 @@
-setwd("~/Cynthia")
-ID_gender <- read.csv(file = "IDandGender.txt", header = T, sep = " ", stringsAsFactors = FALSE)
-print("IDandGender.txt done ")
-relation = read.csv( file ="child_parent.txt", header = T, sep = "\t")
-print("child_parent.txt done")
+if(!require(tidyverse)) install.packages("tidyverse",repos = "http://cran.us.r-project.org")
+setwd(~/Cynthia)
+IDandGender <- read_delim("IDandGender.txt", delim=" ")
+head(IDandGender)
 
-ID_gender[which(ID_gender[,2] == "*"), 2 ] = "unknown"
-parentIDs = matrix(-1, nrow = length(ID_gender[,1]), ncol = 2)
-kinshipformatDF = cbind(ID_gender, parentIDs)
-colnames(kinshipformatDF) <- c("ID","gender" ,"FatherID", "MotherID")
-print("kinshipformatDF created")
+system.time({
+  tbl <- 
+    read_tsv("child_parent.txt") %>% 
+    left_join(IDandGender, by=c("parent" = "profileid" ))
+})
 
-#another matrix of empty rows for new IDs created 
-newIDs = matrix(c(NA,"unknown", NA, NA), nrow = 1943863, ncol = 4, byrow = TRUE)
-newIDs[,1] = 86127513:88071375
-colnames(newIDs) <- c("ID","gender" ,"FatherID", "MotherID")
-print("1943863 newIDs created")
-#combine matrix for newIDs and kinshipformatDF 
-kinshipformatDF = rbind(kinshipformatDF, newIDs)-
-print("kinshipformatDF rbind w/ newIDs")
+tblUnknown <-
+  tbl %>%
+  rename( parentGender=gender) %>% 
+  group_by( child ) %>% 
+  filter( all(parentGender=='*') )
 
-children = relation[,2]
-newIDcounter = 86127512
-i = 1
-count = 0
-time1= Sys.time()
+#both parents present and known 
+tblknown <-
+  tbl[tbl$child %in% tbl$child[duplicated(tbl$child)],] %>%
+  rename( parentGender=gender) %>% 
+  group_by( child ) %>% 
+  filter( all(parentGender!='*'))
 
-while (i <= length(children)) {
-    count = count + 1
-  if(relation[i,2] == relation[i+1,2]){ 
-    parents = c(relation[i,1], relation[i+1,1])
-    child = relation[i,2]
+tblknown%>% 
+  mutate(i = row_number()) %>% 
+  spread(key = parentGender, value = parent) %>%
+  # spread(key = parentGender, value = parent) %>% 
+  left_join(IDandGender, by = c("child" = "profileid"))
+
+
+
+while ( i <= length(tblknown[,2])){
+  if(tblknown$child[i] == tblknown$child[i+1]){
+    if(tblknown$parentGender[i] == tblknown$parentGender[i+1]){
+    tblknown$parentGender[i] = "male"
+    tblknown$parentGender[i+1] = "female"
+    }
     i = i + 1 
-    #if statement where you ask if parent 1 or parent 2 have unknown gender 
-    if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown" ||  kinshipformatDF[as.numeric(parents[2]),2] == "unknown"){
-      #parent 1 has an unknown gender 
-      if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown"){
-        #parent 2 is female then parent 1 is now male 
-        if(kinshipformatDF[as.numeric(parents[2]),2] == "female"){ 
-          kinshipformatDF[as.numeric(parents[1]),2] = "male"
-          
-        }
-        #parent 2 is male then parent 1 is now female 
-        else{ 
-          kinshipformatDF[as.numeric(parents[1]),2] = "female"
-        }
-      }
-      #parent 2 has an unknown gender
-      else if (kinshipformatDF[as.numeric(parents[2]),2] == "unknown") {
-        # parent 1 is female then parent 2 is male 
-        if(kinshipformatDF[as.numeric(parents[1]),2] == "female"){
-          kinshipformatDF[as.numeric(parents[2]),2] = "male"
-        }
-        #parent 1 is male then parent 2 is female 
-        else{ 
-          kinshipformatDF[as.numeric(parents[2]),2] = "female"
-        }
-      } 
-      #both parents are unknown 
-      else if (kinshipformatDF[as.numeric(parents[1]),2] == "unknown" &&  kinshipformatDF[as.numeric(parents[2]),2] == "unknown"){
-        kinshipformatDF[as.numeric(parents[2]),2] = "female"
-        kinshipformatDF[as.numeric(parents[1]),2] = "male"
-      }
-    } 
-  } 
-  # this child has one parent 
-  else{ 
-    child = relation[i,2]
-    newIDcounter = newIDcounter +1 
-    parents = c(relation[i,1], newIDcounter)
-    # only the gender of one parent is known 
-    if (kinshipformatDF[as.numeric(parents[1]),2] == "female"){
-      kinshipformatDF[as.numeric(parents[2]),2] = "male"
-    } else{ 
-      kinshipformatDF[as.numeric(parents[2]),2] = "female"
-    }
-  } 
-  #finding the sex of the parents
-  for( x in parents){
-    sex = kinshipformatDF[as.numeric(x),2]
-    if (sex == "female"){
-      # MOM ID 
-      kinshipformatDF[as.numeric(child),4] = x
-    } else{
-      # DAD ID
-      kinshipformatDF[as.numeric(child),3] = x
-    }
-  } 
-  i =  i +1
-  count = count + 1
-  if (count%%1000 == 0){ #
-    time2 = Sys.time()
-    print(time2 - time1)
-    count = 0 
-    print(paste("ID: ", children[i]))
-    print(paste("parents: ", parents))
-    print(paste("this is i:", i))
   }
 }
-#end while  
-write.table(kinshipformatDF, "~/Cynthia/kinshipformat.txt", sep = "\t")
 
+tblSemiknown <-
+  tbl %>%
+  rename( parentGender=gender) %>% 
+  group_by( child ) %>% 
+  filter( any(parentGender=='*') & any(parentGender!='*') )
+
+
+
+write.table(tblknown, "~/Cynthia/tblknown.txt", sep = "\t")
+# * -> Female 
+# *, * -> Female, male 
+# Male, * <- male, female 
+#female, * = female, male 
+# sort(c("*", "F")) * comes first 
+
+#seperating into different catagories using the filter command
+# before 2936 create a pedigree -- create it with kinship2 
+# create IBD data with pedgiree package  

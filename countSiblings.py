@@ -35,7 +35,7 @@ profiles = [-1 for i in range(58 + 1)]
 for line in f:
     linearr = line.split()
     profiles[int(linearr[0])] = line.split()
-# print(profiles[21])
+    print(profiles[5])
 # open relations file
 f = open("samp_relations.txt", "r")
 # read header

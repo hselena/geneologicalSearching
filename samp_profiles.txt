@@ -1,1 +1,1 @@
-profileid	gender	is_alive	current_residence_location_city	birth_year	birth_month	birth_day1	male	1	Oxnard	1973	3	152	female	1	Oxnard	1975	12	213	male	1	Oxnard	1993	11	224	female	1	San Francisco	1997	3	105	male	1	Oxnard	1998	12	4
+profileid	gender	is_alive	current_residence_location_city	birth_year	birth_month	birth_day1	male	1	Oxnard	1973	3	152	female	1	Oxnard	1975	12	213	male	1	Oxnard	1993	11	224	female	1	SanFrancisco	1997	3	105	male	1	Oxnard	1998	12	4
